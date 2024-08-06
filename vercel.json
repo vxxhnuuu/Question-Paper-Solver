@@ -17,8 +17,8 @@
       }
     ],
     "env": {
-      "GOOGLE_APPLICATION_CREDENTIALS_BASE64": "@google-credentials-base64",
-      "GEMINI_API_KEY": "@gemini-api-key"
+      "GOOGLE_APPLICATION_CREDENTIALS_BASE64": "GOOGLE_APPLICATION_CREDENTIALS_BASE64",
+      "GEMINI_API_KEY": "GEMINI_API_KEY"
     }
   }
   
