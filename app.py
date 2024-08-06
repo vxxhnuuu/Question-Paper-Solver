@@ -1,17 +1,26 @@
 import os
+import base64
 from flask import Flask, request, render_template, jsonify
 from google.cloud import vision
 from google.oauth2 import service_account
 import google.generativeai as genai
 from flask_cors import CORS
 
-# Configure the Google Cloud Vision API client
+# Decode the base64-encoded Google Cloud credentials and configure the Vision API client
 def configure_vision_api():
-    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if not credentials_path:
-        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    base64_key = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_BASE64')
+    if not base64_key:
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set.")
     
-    credentials = service_account.Credentials.from_service_account_file(credentials_path)
+    # Decode the base64 key
+    key_json = base64.b64decode(base64_key).decode('utf-8')
+    
+    # Create a temporary file with the JSON key
+    with open('temp_keyfile.json', 'w') as f:
+        f.write(key_json)
+    
+    # Configure credentials
+    credentials = service_account.Credentials.from_service_account_file('temp_keyfile.json')
     client = vision.ImageAnnotatorClient(credentials=credentials)
     return client
 
@@ -33,7 +42,6 @@ def generate_response(prompt):
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
 @app.route('/')
 def index():
@@ -50,7 +58,7 @@ def upload_file():
             return jsonify({'error': 'No selected file'}), 400
         
         if file:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file_path = os.path.join('uploads', file.filename)
             file.save(file_path)
             
             text = extract_text_from_image(file_path)
@@ -80,8 +88,8 @@ def extract_text_from_image(image_path):
 if __name__ == '__main__':
     try:
         configure_api()
-        if not os.path.exists(app.config['UPLOAD_FOLDER']):
-            os.makedirs(app.config['UPLOAD_FOLDER'])
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
         app.run(debug=True)
     except Exception as e:
         print(f"Configuration error: {e}")
