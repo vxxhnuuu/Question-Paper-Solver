@@ -4,17 +4,14 @@ from google.cloud import vision
 from google.oauth2 import service_account
 import google.generativeai as genai
 from flask_cors import CORS
-import base64
 
 # Configure the Google Cloud Vision API client
 def configure_vision_api():
-    credentials_base64 = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_BASE64')
-    if not credentials_base64:
-        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set.")
+    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if not credentials_path:
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
     
-    credentials_json = base64.b64decode(credentials_base64).decode('utf-8')
-    credentials_dict = json.loads(credentials_json)
-    credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+    credentials = service_account.Credentials.from_service_account_file(credentials_path)
     client = vision.ImageAnnotatorClient(credentials=credentials)
     return client
 
@@ -27,12 +24,16 @@ def configure_api():
     genai.configure(api_key=api_key)
 
 def generate_response(prompt):
-    model = genai.GenerativeModel("gemini-1.5-pro")  # Replace with your actual model identifier
-    response = model.generate_content(prompt)
-    return response.text if response else "No response generated"
+    try:
+        model = genai.GenerativeModel("gemini-1.5-pro")  # Replace with your actual model identifier
+        response = model.generate_content(prompt)
+        return response.text if response else "No response generated"
+    except Exception as e:
+        return str(e)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+app.config['UPLOAD_FOLDER'] = 'uploads'
 
 @app.route('/')
 def index():
@@ -49,7 +50,7 @@ def upload_file():
             return jsonify({'error': 'No selected file'}), 400
         
         if file:
-            file_path = os.path.join('uploads', file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(file_path)
             
             text = extract_text_from_image(file_path)
@@ -62,22 +63,25 @@ def upload_file():
         return jsonify({'error': str(e)}), 500
 
 def extract_text_from_image(image_path):
-    client = configure_vision_api()
-    with open(image_path, 'rb') as image_file:
-        content = image_file.read()
-    image = vision.Image(content=content)
-    response = client.text_detection(image=image)
-    texts = response.text_annotations
-    if texts:
-        return texts[0].description
-    else:
-        return ""
+    try:
+        client = configure_vision_api()
+        with open(image_path, 'rb') as image_file:
+            content = image_file.read()
+        image = vision.Image(content=content)
+        response = client.text_detection(image=image)
+        texts = response.text_annotations
+        if texts:
+            return texts[0].description
+        else:
+            return ""
+    except Exception as e:
+        return str(e)
 
 if __name__ == '__main__':
     try:
         configure_api()
-        if not os.path.exists('uploads'):
-            os.makedirs('uploads')
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
         app.run(debug=True)
     except Exception as e:
         print(f"Configuration error: {e}")
