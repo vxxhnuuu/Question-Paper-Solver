@@ -87,5 +87,5 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 For any questions or inquiries, feel free to reach out:
 
-- Your Name - your.email@example.com
-- GitHub: yourusername
+- Vishnu Dathan - vishnud0098@gmail.com
+- GitHub: vxxhnuuu
