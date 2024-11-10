@@ -1,7 +1,7 @@
 import os
 import html
 from flask import Flask, request, render_template, jsonify
-from PIL import Image  # Ensure you have Pillow installed for image handling
+from PIL import Image 
 import google.generativeai as genai
 from flask_cors import CORS
 from dotenv import load_dotenv  # Import dotenv to load environment variables
@@ -29,7 +29,7 @@ def generate_image_response(text_prompt, image_path):
         # Load the image using PIL
         image = Image.open(image_path)
 
-        # Initialize the model (replace 'gemini-1.5-flash' with your actual model identifier)
+        # Initialize the model 
         model = genai.GenerativeModel("gemini-1.5-flash")
         
         # Send the combined text prompt and image to the model
@@ -67,7 +67,7 @@ def upload_file():
             file_path = os.path.join('uploads', file.filename)
             file.save(file_path)
             
-            prompt = "Your custom prompt here."  # Adjust as necessary
+            prompt = "Your custom prompt here."  
             
             # Generate the response using the Gemini API
             response = generate_image_response(prompt, file_path)
